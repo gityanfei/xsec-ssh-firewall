@@ -1,50 +1,55 @@
 package util
 
 import (
-	"log"
+	"go.uber.org/zap"
 	"os/exec"
-
 	"xsec-ssh-firewall/settings"
 )
 
-func SetIptables() {
+var newChain = settings.SettingConfig.UserDefineChain + "_NEW"
 
-	for ip := range settings.Cache {
-		if ip == "127.0.0.1" {
-			log.Printf("Local ip: %v", ip)
-			continue
+func SetNewIptablesChain() {
+	exec.Command("/sbin/iptables", "-t", "filter", "-N", newChain).Run()
+	for ip, ipCache := range settings.Cache {
+		count, ok := ipCache.Get("count")
+		if ok {
+			if count.(int) >= settings.SettingConfig.MaxFailedCount {
+				exec.Command("/sbin/iptables", "-t", "filter", "-A", newChain, "-i", settings.SettingConfig.Interface, "-s", ip, "-j", "DROP").Output()
+			}
 		} else {
-			log.Printf("Block ip: %v\n", ip)
-			exec.Command("/sbin/iptables", "-t", "filter", "-A", "WHITELIST", "-i", settings.Interface, "-s", ip, "-j", "DROP").Output()
-
+			delete(settings.Cache, ip)
+			zap.S().Infof("将IP:%s移出%s\n", ip, settings.SettingConfig.UserDefineChain)
 		}
-
 	}
 }
 
 // Init iptables policy
-func InitPolicy() {
+func RenameChain() {
+	// rename _new to old
+	exec.Command("/sbin/iptables", "-t", "filter", "--rename-chain", newChain, settings.SettingConfig.UserDefineChain).Run()
 	// set white list chain in filter table
-	exec.Command("/sbin/iptables", "-t", "filter", "-N", "WHITELIST").Run()
-	exec.Command("/sbin/iptables", "-t", "filter", "-F", "WHITELIST").Run()
-	exec.Command("/sbin/iptables", "-t", "filter", "-A", "INPUT", "-j", "WHITELIST").Run()
+	exec.Command("/sbin/iptables", "-t", "filter", "-A", "INPUT", "-j", settings.SettingConfig.UserDefineChain).Run()
+}
+
+// AddPolicy Policy
+func AddPolicy(ipAddr string) {
+	// Add rule
+	exec.Command("/sbin/iptables", "-t", "filter", "-A", settings.SettingConfig.UserDefineChain, "-i", settings.SettingConfig.Interface, "-s", ipAddr, "-j", "DROP").Output()
+
 }
 
 // Delete Policy
-func DeletePolicy() {
+func FlushAndDeleteOldChain() {
 	// Flush rule
-	exec.Command("/sbin/iptables", "-t", "filter", "-F").Run()
+	exec.Command("/sbin/iptables", "-t", "filter", "-D", "INPUT", "-j", settings.SettingConfig.UserDefineChain).Run()
+	// delete rules.if not: iptables: Directory not empty.
+	exec.Command("/sbin/iptables", "-t", "filter", "-F", settings.SettingConfig.UserDefineChain).Run()
 	// delete chain
-	exec.Command("/sbin/iptables", "-t", "filter", "-X", "WHITELIST").Run()
-
+	exec.Command("/sbin/iptables", "-t", "filter", "-X", settings.SettingConfig.UserDefineChain).Run()
 }
 
 func RefreshPolicy() {
-	Stop()
-	InitPolicy()
-	SetIptables()
-}
-
-func Stop() {
-	DeletePolicy()
+	SetNewIptablesChain()
+	FlushAndDeleteOldChain()
+	RenameChain()
 }

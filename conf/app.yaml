@@ -1,0 +1,18 @@
+interface: eth0
+lockTime: 3600
+maxFailedCount: 1
+whiteIpList:
+  - 10.0.16.15
+  - 127.0.0.1
+  - 8.8.8.8
+sshdLogPath: /var/log/auth.log
+errorLogREGX:
+  - ^.*Invalid user.*from (.*) port.*$
+userDefineChain: BLACKLIST
+globalFlushTime: 3600
+logConfig:
+  level: "debug"
+  filename: "./run.log"
+  maxsize: 200
+  maxage: 7
+  maxbackups: 10
