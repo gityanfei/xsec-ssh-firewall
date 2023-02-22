@@ -12,13 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, windows] # 需要打包的系统
+        goos: [linux] # 需要打包的系统
         goarch: [amd64, arm64] # 需要打包的架构
         exclude: # 排除某些平台和架构
           - goarch: arm64
             goos: windows
     steps:
       - uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.18
       - uses: wangyoucao577/go-release-action@v1.30
         with:
           github_token: ${{ secrets.SSH }} # 一个默认的变量，用来实现往 Release 中添加文件
