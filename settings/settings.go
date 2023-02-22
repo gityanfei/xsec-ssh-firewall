@@ -16,9 +16,9 @@ var (
 
 func GetYamlConfig() (err error) {
 	vip := viper.New()
-	vip.AddConfigPath("./conf/") //设置读取的文件路径
-	vip.SetConfigName("app")     //设置读取的文件名
-	vip.SetConfigType("yaml")    //设置文件的类型
+	vip.AddConfigPath("./")     //设置读取的文件路径
+	vip.SetConfigName("config") //设置读取的文件名
+	vip.SetConfigType("yaml")   //设置文件的类型
 	//尝试进行配置读取
 	if err = vip.ReadInConfig(); err != nil {
 		return err

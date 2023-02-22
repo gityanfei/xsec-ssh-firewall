@@ -11,18 +11,21 @@ xsec-ssh-firewall，源项目为https://github.com/netxfly/xsec-ssh-firewall，�
 
 ```yaml
 interface: eth0
-lockTime: 3600
+lockTime: 86400
 maxFailedCount: 1
 whiteIpList:
   - 10.0.16.15
   - 127.0.0.1
   - 8.8.8.8
+# ubuntu使用这个配置
 sshdLogPath: /var/log/auth.log
+# centos使用这个配置
+#sshdLogPath: /var/log/secure
 errorLogREGX:
   - ^.*Invalid user.*from (.*) port.*$
   - ^.*Connection closed by authenticating user [a-zA-Z0-9]+ (.*) port.*$
 userDefineChain: BLACKLIST
-globalFlushTime: 3600
+globalFlushTime: 600
 logConfig:
   level: "debug"
   filename: "./run.log"
